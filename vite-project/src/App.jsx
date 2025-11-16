@@ -175,133 +175,127 @@ return (
 export default App;
 
 /*
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+// ... (omitted imports and unused App.css import for brevity) ...
 
 function App() {
   const [userInput, setUserInput] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [audioURL, setAudioURL] = useState(null);
+  const [audioURL, setAudioURL] = useState(null); // Stores the URL for the generated audio
+  const audioRef = useRef(null); // Ref for the Audio element
 
-  // --- API Key Constants (INSECURE! Use for Hackathon only) ---
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-  const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
-  const EL_VOICE_ID = "21m00Tcm4wMe8RLQysT5"; // Default ElevenLabs voice
-  // -----------------------------------------------------------
-
-  // Voice input (Grammar Biasing included, remains the same)
+  // --- Voice input (startListening is the same) ---
   const startListening = () => {
-    // ... (Your existing startListening function goes here, including Grammars) ...
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Your browser does not support speech recognition.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList;
-    const slangGrammar = `#JSGF V1.0; grammar slang; public <slang> = low key | rizz | no cap | bussin | slay | mid | gyatt | gyat;`;
-
-    if (SpeechGrammarList) {
-        const grammarList = new SpeechGrammarList();
-        grammarList.addFromString(slangGrammar, 10);
-        recognition.grammars = grammarList;
-    }
-
-    recognition.start();
-    recognition.onstart = () => { setTranslatedText("Listening... speak now."); };
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setUserInput(transcript);
-      setTranslatedText("Transcript ready. Click Translate to interpret the slang.");
-    };
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      setTranslatedText(`Speech recognition error: ${event.error}`);
-    };
+    // ... (Your existing startListening code is fine) ...
   };
-
-
+  
+  // New function to play the audio
   const playAudio = () => {
-    if (audioURL) {
-      const audio = new Audio(audioURL);
-      audio.play();
+    if (audioRef.current) {
+      audioRef.current.play();
     }
   };
 
-  // --- 🚨 FINAL COMBINED CLIENT-SIDE API LOGIC ---
+  // --- COMBINED Gemini Translation and ElevenLabs TTS ---
   const translateAndSpeak = async (text) => {
     setLoading(true);
     setTranslatedText("");
-    setAudioURL(null);
-
+    setAudioURL(null); // Clear previous audio
+    
     try {
-      // 1. CALL GEMINI API (Translation)
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-      
-      const prompt = `
-        You are a Gen Z slang interpreter. Your task is to process the transcribed text from a speech-to-text system.
-        **Step 1: STT Error Correction:** If you see any of the following misspellings, correct them: 'Loki'->'low-key', 'ris'->'rizz', 'yacht'->'gyatt'.
-        **Step 2: Slang Equivalents (Intensity Control):** Interpret 'bussin'' to mean 'pretty good' or 'enjoyable,' not 'excellent.'
-        **Step 3: Output Formatting:** Provide the primary translation, followed by exactly three alternative translations separated by dashes, under the heading "Additionally it could mean: ...".
-        User Text to Translate: "${text}"
-        **Strict Output Format Example:** To be honest, that song is pretty good. Additionally it could mean: - Honestly, this music is quite enjoyable. - I subtly agree that this track is decent. - I kind of like this song; it is quite enjoyable.
-      `;
-
-      const geminiResponse = await fetch(geminiUrl, {
+      // 1. Send the text input to the combined SECURE backend route
+      // NOTE: This route handles Gemini (translation) and then ElevenLabs (TTS).
+      const response = await fetch("/api/translate-and-speak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body: JSON.stringify({ textInput: text }),
       });
 
-      if (!geminiResponse.ok) {
-        throw new Error(`Gemini API Failed: ${geminiResponse.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Server request failed with status: ${response.status}. Did you start your Node.js server?`);
       }
-      
-      const geminiData = await geminiResponse.json();
-      const fullTranslatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "Translation not found.";
-      setTranslatedText(fullTranslatedText);
 
-      // 2. CALL ELEVENLABS API (Text-to-Speech)
-      const elevenLabsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${EL_VOICE_ID}`;
+      // The server returns the final translated text AND the audio data
+      const data = await response.blob();
       
-      const elResponse = await fetch(elevenLabsUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            // ⚠️ ElevenLabs uses a custom header for the API key
-            'xi-api-key': ELEVENLABS_API_KEY, 
-        },
-        body: JSON.stringify({
-            text: fullTranslatedText, // Send the full output string
-            model_id: "eleven_monolingual_v1",
-            voice_settings: { stability: 0.5, similarity_boost: 0.5 }
-        })
+      // The server should return a JSON object with the text and the audio blob URL
+      // Since fetch to /api/translate-and-speak returns a Blob (MP3 audio), we must handle the translation text differently
+      // The simplest way for a hackathon is for the server to return the audio, and we'll fetch the text separately 
+      // OR, the server MUST set the translated text in a custom header (Less reliable)
+      
+      // ******* HACKATHON WORKAROUND: ASSUME SERVER RETURNS A BLOB OF AUDIO *******
+      
+      // Let's assume the server returns a JSON object with both: { text: "...", audioBlob: <binary data> }
+      // Since React Fetch can't handle a mixed JSON/Blob response easily, we must use a two-step process:
+      
+      // Step A: Get the translated text from the Gemini endpoint (client-side)
+      const translated = await translateWithGemini(text); // Reuse your existing Gemini call
+      setTranslatedText(translated);
+
+      // Step B: Send the FINAL translated text to a new server endpoint just for TTS
+      const audioResponse = await fetch("", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ textToSpeak: translated }),
       });
-
-      if (!elResponse.ok) {
-        throw new Error(`ElevenLabs API Failed: ${elResponse.statusText}`);
+      
+      if (!audioResponse.ok) {
+        throw new Error(`TTS server failed with status: ${audioResponse.status}`);
       }
 
-      // 3. PROCESS AUDIO STREAM
-      const audioBlob = await elResponse.blob();
+      // Convert the raw MP3 audio blob to a URL that the <audio> element can play
+      const audioBlob = await audioResponse.blob();
       const url = URL.createObjectURL(audioBlob);
       setAudioURL(url);
-
+      
     } catch (err) {
-      console.error("Full translation process error:", err);
-      // Display a general user-friendly error
-      setTranslatedText(`Error: Failed to process translation or audio. Check console for API details.`); 
+      console.error("Translation/TTS error:", err);
+      setTranslatedText(`Error: ${err.message}. Check the console and server logs.`);
     } finally {
       setLoading(false);
     }
   };
-  // -------------------------------------------------------------
 
+  // Re-define your original Gemini translation function, but remove the loading/state logic
+  // This will be called *before* the TTS step
+  const translateWithGemini = async (text) => {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+    // --- Smart Prompt (same as before) ---
+    const prompt = `
+      You're taking as an input Gen Z/Gen Alpha slang and interpreting it to output the phrase for someone familiar with 2000s-2005s slang...
+      // ... (use your full prompt text here) ...
+      User Text to Translate: "${text}"
+      
+      ** Output Format Must Strictly conform to this Example:**
+      
+      
+      Additionally it could mean: 
+      - 
+      - 
+      - 
+    `;
+    // --- End of Smart Prompt ---
+
+    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(`Gemini failed: ${errorBody.error.message || 'Unknown Error'}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "Translation not found.";
+  };
+  
+  // The handleTranslate function now calls the combined function
   const handleTranslate = () => {
     if (!userInput.trim()) {
       setTranslatedText("Please enter or speak some slang first.");
@@ -311,38 +305,42 @@ function App() {
   };
 
 return (
-    <div style={{ padding: 50, textAlign: "center" }}>
-      <h1>💬 Slang Translator</h1>
-      <textarea
+    <div className="app-container">
+      <h1 className="app-title">What is my kid saying? 🤔 </h1>
+      <textarea className="input-area"
         rows="4"
         cols="50"
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
-        placeholder="Type or speak your Gen Z slang here..."
+        placeholder="Type or speak your Gen Z slang here (e.g., 'Low-key, that song is bussin')."
         disabled={loading}
       />
       <br /><br />
-      <button onClick={handleTranslate} disabled={loading}>
+      <button className="app-button" onClick={handleTranslate} disabled={loading}>
         {loading ? "Processing..." : "Translate & Speak"}
       </button>
-      <button onClick={startListening} style={{ marginLeft: 10 }} disabled={loading}>
+      <button className="app-button" style={{ marginLeft: 10 }} onClick={startListening} disabled={loading} >
          Speak
       </button>
 
       {translatedText && (
-        <div style={{ marginTop: 20 }}>
-          <p>Translated Text:</p>
-          <div style={{ padding: 10, background: "#e6f1ff", borderRadius: 8, whiteSpace: 'pre-wrap' }}>
+        <div className="output-container">
+          <p className="translated-text-p">Translated Text:</p>
+          <div className="translated-content">
             {translatedText}
           </div>
           {audioURL && (
-            <button 
-                onClick={playAudio} 
-                style={{ marginTop: 10, backgroundColor: 'purple', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px' }}
-                disabled={loading}
-            >
-              🔊 Play Full Output
-            </button>
+            <>
+              {//Hidden audio element to hold the audio data}
+              <audio ref={audioRef} src={audioURL} /> 
+              <button 
+                  onClick={playAudio} 
+                  className="app-button"
+                  style={{ marginTop: 10, backgroundColor: '#39a', color: 'white' }}
+              >
+                🔊 Play Full Output
+              </button>
+            </>
           )}
         </div>
       )}
