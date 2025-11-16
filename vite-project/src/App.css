@@ -1,0 +1,159 @@
+/* Existing Vite/React Boilerplate Styles */
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* --- RETRO MINIMALIST STYLES START HERE --- */
+
+/* Reset body for full dark background */
+body {
+    background-color: #1d032b; /* Dark background */
+    margin: 0;
+}
+
+/* App Container */
+.app-container {
+    /* Styles moved from the inline div in App.jsx */
+    padding: 50px;
+    text-align: center;
+    color: #00ff00;           /* Digital Green text */
+    font-family: 'Monaco', 'Courier New', monospace;
+    min-height: 100vh;
+}
+
+/* Title */
+.app-title {
+    font-size: 2.5em;
+    margin-bottom: 30px;
+    text-shadow: 0 0 5px #00ff00; /* Neon glow effect */
+}
+
+/* Input/Textarea */
+.input-area {
+    /* Styles applied to the textarea */
+    width: 90%;
+    max-width: 500px;
+    height: 150px;
+    padding: 10px;
+    background-color: #051f05; /* Darker green/black for input */
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    box-shadow: 0 0 5px #00ff00;
+    resize: none;
+    font-size: 1.1em;
+    margin-bottom: 20px;
+    font-family: inherit;
+}
+
+/* Buttons */
+.app-button {
+    /* Styles applied to both buttons */
+    margin: 0 5px;
+    padding: 10px 20px;
+    background-color: #004d00; /* Dark Green Button */
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    cursor: pointer;
+    font-size: 1em;
+    text-transform: uppercase;
+    box-shadow: 2px 2px 0 #00ff00; /* Blocky 3D effect */
+    transition: background-color 0.1s, box-shadow 0.1s;
+    font-family: inherit;
+}
+
+/* Button States */
+.app-button:hover:not(:disabled) {
+    background-color: #008000;
+}
+
+.app-button:active:not(:disabled) {
+    box-shadow: 0 0 0 #00ff00; /* Press-down effect */
+    transform: translate(2px, 2px);
+}
+
+.app-button:disabled {
+    cursor: not-allowed;
+    background-color: #330033;
+    color: #888;
+    box-shadow: 2px 2px 0 #333;
+    border-color: #333;
+}
+
+
+/* Output Box Container */
+.output-container {
+    /* Styles applied to the div wrapping the translated text */
+    margin-top: 20px;
+    text-align: left; /* Keep text left-aligned inside the box */
+    width: 90%;
+    max-width: 524px;
+    margin: 40px auto 0 auto;
+    padding: 20px;
+    background-color: #051f05;
+    border: 2px solid #00ff00;
+    box-shadow: 0 0 8px #00ff00;
+    white-space: pre-wrap;
+    min-height: 100px;
+    font-size: 1.1em;
+}
+
+/* Translated Text Paragraph */
+.translated-text-p {
+    /* Styling for the <p>Translated Text:</p> */
+    margin-bottom: 5px;
+}
+
+/* Translated Text Content Div */
+.translated-content {
+    /* Styling for the div containing the actual result */
+    padding: 10px;
+    background: #051f05; /* Consistent background */
+    border-radius: 0; /* Keep it blocky */
+    white-space: pre-wrap;
+    font-size: 1em;
+}
+
+/* Text when loading/error (attention color) */
+.loading-text {
+    color: #ff00ff; /* Pink/Magenta for attention */
+    text-shadow: 0 0 4px #ff00ff;
+}
